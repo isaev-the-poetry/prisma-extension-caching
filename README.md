@@ -7,13 +7,6 @@ This extension uses modern databases json query features.
 Query arguments will be used as json caching key.
 You can use Prisma.JsonFilter in purge function to get maximum flexibility.
 
-# Supported methods
-Currently supported only findMany method.
-Any other method will produce standart database query without caching.
-
-I'm open to evolve mode functionality.
-So i'am going to add same support for groupBy and count methods later.
-
 ## Get started
 
 Installation: 
@@ -64,4 +57,10 @@ Test the extension in the example app:
 npm run dev
 ```
 
+# Supported methods
+Currently supported only findMany method.
+Any other method will produce standart database query without caching.
+
+I'm open to evolve mode functionality.
+So i'am going to add same support for groupBy and count methods later.
 
