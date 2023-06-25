@@ -42,6 +42,9 @@ That's all. Now you can use it as standart client:
   await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
   await cache.post.purge({ hours: 3 }) // model any cache older than 3 hours
   await cache.post.purge() // any model cache
+ 
+  const countPosts = await cache.post.count()
+  await cache.post.purge({ hours: 3 }, 'count') // purge for only specific method
 ```
 
 # The example app:
@@ -58,9 +61,14 @@ npm run dev
 ```
 
 # Supported methods
-Currently supported only findMany method.
+
+
+```
+findMany
+groupBy
+count
+aggregate
+```
+
 Any other method will produce standart database query without caching.
-
-I'm open to evolve mode functionality.
-So i'am going to add same support for groupBy and count methods later.
-
+Open for MR.
