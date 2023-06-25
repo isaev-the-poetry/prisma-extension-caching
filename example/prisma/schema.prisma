@@ -2,31 +2,28 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["clientExtensions"]
+  provider        = "prisma-client-js" 
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL") 
 }
 
-model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique
-  name  String
+model cache {
+  model String
+  operation String
+  key   Json
+  value Json
 
-  posts Post[]
+  created DateTime @default(now())
+  updated DateTime @default(now())
+
+  @@id([model, operation, key])
 }
 
 model Post {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime
+  id        Int      @id @default(autoincrement()) 
   title     String
   content   String?
-  published Boolean  @default(false)
-
-  author   User @relation(fields: [authorId], references: [id])
-  authorId Int
 }
