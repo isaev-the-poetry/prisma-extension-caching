@@ -1,30 +1,57 @@
-# Prisma Client Extension starter repository
+# Prisma Client Extension :: Prisma Native Caching 
 
-Use this template to bootstrap creating your Prisma Client extension.
+This extension adds the ability to cache complex queries using client-side prisms.
+The prism model is used as storage, so you can use any database that prisma support.
 
-Client extensions provide a powerful way to add functionality to Prisma Client in a type-safe manner. You can use them to create simple and flexible solutions that are not natively supported by Prisma. 
+This extension uses modern databases json query features. 
+Query arguments will be used as json caching key.
+You can use Prisma.JsonFilter in purge function to get maximum flexibility.
 
+# Supported methods
+Currently supported only findMany method.
+Any other method will produce standart database query without caching.
 
-
-If you would like to learn more, refer to the [Prisma docs](https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions) to learn more information.
+I'm open to evolve mode functionality.
+So i'am going to add same support for groupBy and count methods later.
 
 ## Get started
 
-Click the **Use this template** button and provide details for your Client extension
-
-Install the dependencies:
-
-```
-npm install
-```
-
-Build the extension:
+Installation: 
+Add this model to your prisma schema.
 
 ```
-npm run build
+model cache {
+  model String
+  operation String
+  key   Json
+  value Json
+
+  created DateTime @default(now())
+  updated DateTime @default(now())
+
+  @@id([model, operation, key])
+}
 ```
 
-Set up the example app:
+Create caching client:
+```
+import { caching } from "prisma-extension-caching" 
+export const cache = new PrismaClient().$extends(caching())
+```
+
+That's all. Now you can use it as standart client:
+
+```
+  // Query arguments will be used as flexible caching key.
+  const cachedPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })  
+ 
+  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // model query exact match
+  await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
+  await cache.post.purge({ hours: 3 }) // model any cache older than 3 hours
+  await cache.post.purge() // any model cache
+```
+
+### The example app:
 
 ```
 cd example
@@ -37,13 +64,4 @@ Test the extension in the example app:
 npm run dev
 ```
 
-### Evolve the extension
 
-The code for the extension is located in the [`index.ts`](./src/index.ts) file. Feel free to update it before publishing your Client extension to [npm](https://npmjs.com/).
-
-## Learn more
-
-- [Docs — Client extensions](https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions)
-- [Docs — Shared extensions](https://www.prisma.io/docs/concepts/components/prisma-client/client-extensions/shared-extensions)
-- [Examples](https://github.com/prisma/prisma-client-extensions/tree/main)
-- [Preview announcement blog post](https://www.prisma.io/blog/client-extensions-preview-8t3w27xkrxxn#introduction)
