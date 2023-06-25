@@ -1,6 +1,6 @@
 {
   "name": "prisma-extension-caching",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "Igor Isaev",
   "description": "Caching layer over prisma client",
   "keywords": ["prisma", "@prisma/client", "extension", "cache", "caching", "purge"],

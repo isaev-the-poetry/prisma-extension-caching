@@ -14,8 +14,8 @@ You can use Prisma.JsonFilter in purge function to get maximum flexibility.
  
   await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // model query exact match
   await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
-  await cache.post.purge({ hours: 3 }) // model any cache older than 3 hours
-  await cache.post.purge() // any model cache
+  await cache.post.purge({ hours: 3 }) // all model cache older than 3 hours
+  await cache.post.purge() // all model cache
  
   const countPosts = await cache.post.count()
   await cache.post.purge({ hours: 3 }, 'count') // purge for only specific method
@@ -77,7 +77,7 @@ Open for MR.
 
 findUnique ** if original query return null, result won't be saved in cache.
 
-# QA:
+# FAQ:
   How it work?
     - First time query executed in database, rest will be served from cache until being purged manually, by calling purge() method on model.
   How it works with types?
