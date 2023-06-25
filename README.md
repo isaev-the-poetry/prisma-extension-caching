@@ -7,6 +7,20 @@ This extension uses modern databases json query features.
 Query arguments will be used as json caching key.
 You can use Prisma.JsonFilter in purge function to get maximum flexibility.
 
+# Usage:
+```
+  // Query arguments will be used as flexible caching key.
+  const cachedPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })  
+ 
+  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // model query exact match
+  await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
+  await cache.post.purge({ hours: 3 }) // model any cache older than 3 hours
+  await cache.post.purge() // any model cache
+ 
+  const countPosts = await cache.post.count()
+  await cache.post.purge({ hours: 3 }, 'count') // purge for only specific method
+```
+
 ## Get started
 
 Installation: 
@@ -32,20 +46,8 @@ import { caching } from "prisma-extension-caching"
 export const cache = new PrismaClient().$extends(caching())
 ```
 
-That's all. Now you can use it as standart client:
+That's all. Now you can use it as second client.
 
-```
-  // Query arguments will be used as flexible caching key.
-  const cachedPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })  
- 
-  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // model query exact match
-  await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
-  await cache.post.purge({ hours: 3 }) // model any cache older than 3 hours
-  await cache.post.purge() // any model cache
- 
-  const countPosts = await cache.post.count()
-  await cache.post.purge({ hours: 3 }, 'count') // purge for only specific method
-```
 
 # The example app:
 
@@ -62,13 +64,26 @@ npm run dev
 
 # Supported methods
 
-
 ```
 findMany
 groupBy
 count
 aggregate
+findUnique**
 ```
 
 Any other method will produce standart database query without caching.
 Open for MR.
+
+findUnique ** if original query return null, result won't be saved in cache.
+
+# QA:
+  How it work?
+    - First time query executed in database, rest will be served from cache until being purged manually, by calling purge() method on model.
+  How it works with types?
+    - Fully support
+  Can i disable cache for specific method/model?
+    - No. Use second client instead.
+  Why do i need to cache findUnique?
+    - It helpfull, when you use include in query. 
+      Ex: cache.posts.findUnique({ where: { id: 1 }, include: { comments: { take: 10 } }})

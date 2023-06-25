@@ -13,7 +13,7 @@ export const caching = () =>
       name: 'prisma-extension-caching',
       model: {
         $allModels: {
-          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range, operation?: 'findMany' | 'groupBy' | 'count' | 'aggregate') {
+          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range, operation?: 'findMany' | 'groupBy' | 'count' | 'aggregate' | 'findUnique') {
             const ctx = Prisma.getExtensionContext(this)
             const model = ctx.name
 
@@ -43,6 +43,19 @@ export const caching = () =>
               where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } },
               create: { model, operation, key: args as Prisma.JsonObject, value: result as Prisma.JsonArray },
               update: { value: result as Prisma.JsonArray }
+            })
+            return result
+          },
+          async findUnique({ model, operation, args, query }) {
+            const cache = await client.cache.findUnique({ where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } } })
+            if (cache)
+              return cache.value
+
+            const result = await query(args)
+            result && await client.cache.upsert({
+              where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
+              create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
+              update: { value: result || {} as Prisma.JsonArray }
             })
             return result
           },
