@@ -51,7 +51,7 @@ That's all. Now you can use it as standart client:
   await cache.post.purge() // any model cache
 ```
 
-### The example app:
+# The example app:
 
 ```
 cd example
