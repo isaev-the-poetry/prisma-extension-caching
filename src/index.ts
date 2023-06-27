@@ -1,10 +1,15 @@
 import { Prisma, PrismaClient } from '@prisma/client'
 
 export type range = { hours: number }
+export const supportedMethod = [ 'findMany' , 'groupBy' , 'count' , 'aggregate' , 'findUnique' ] as const
+
+export type supportedMethod = typeof supportedMethod[number]
 
 const isRange = (args: {}): args is range => "hours" in args
 const isFilter = (args: {}): args is Prisma.JsonFilter => "path" in args
+const isMethod = (method: unknown): method is supportedMethod => supportedMethod.includes(method as supportedMethod)
 const delayHours = (purgeDate: Date, hours: number): Date => (purgeDate.setTime(purgeDate.getTime() - (hours * 60 * 60 * 1000)), purgeDate)
+
 
 
 export const caching = () =>
@@ -13,12 +18,14 @@ export const caching = () =>
       name: 'prisma-extension-caching',
       model: {
         $allModels: {
-          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range, operation?: 'findMany' | 'groupBy' | 'count' | 'aggregate' | 'findUnique') {
+          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range | supportedMethod, operation?: supportedMethod ) {
             const ctx = Prisma.getExtensionContext(this)
             const model = ctx.name
 
             if (!args)
               return client.cache.deleteMany({ where: { model, operation } })
+            else if (isMethod(args))
+            return client.cache.deleteMany({ where: { model, operation: args } })
             else if (isFilter(args))
               return client.cache.deleteMany({ where: { model, key: args, operation } })
             else if (isRange(args))
