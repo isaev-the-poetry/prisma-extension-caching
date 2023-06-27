@@ -61,6 +61,7 @@ groupBy
 count
 aggregate
 findUnique**
+findFirst**
 ```
 
 Any other method will produce standart database query without caching.

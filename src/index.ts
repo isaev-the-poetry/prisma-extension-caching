@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 
 type range = { hours: number } | { seconds: number }
 
-export const supportedMethod = ['findMany', 'groupBy', 'count', 'aggregate', 'findUnique'] as const
+export const supportedMethod = ['findMany', 'groupBy', 'count', 'aggregate', 'findUnique', 'findFirst'] as const
 export type supportedMethod = typeof supportedMethod[number]
 
 const isRange = (args: {}): args is range => ("hours" in args) || "seconds" in args 
@@ -71,10 +71,23 @@ export const caching = () =>
             result && await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
               create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
-              update: { value: result || {} as Prisma.JsonArray }
+              update: { value: result || {} as Prisma.JsonObject }
             })
             return result
           },
+          async findFirst({ model, operation, args, query }) {
+            const cache = await client.cache.findUnique({ where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } } })
+            if (cache)
+              return cache.value
+
+            const result = await query(args)
+            result && await client.cache.upsert({
+              where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
+              create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
+              update: { value: result || {} as Prisma.JsonObject }
+            })
+            return result
+          }, 
           async groupBy({ model, operation, args, query }) {
             const cache = await client.cache.findUnique({ where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } } })
             if (cache)
