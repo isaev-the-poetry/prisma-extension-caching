@@ -47,7 +47,9 @@ model cache {
 Create caching client:
 ```
 import { caching } from "prisma-extension-caching" 
-export const cache = new PrismaClient().$extends(caching())
+
+const prisma = new PrismaClient()
+const cache = prisma.$extends(caching()) 
 ```
 
 That's all. Now you can use it as second client.
@@ -64,21 +66,16 @@ findUnique**
 findFirst**
 ```
 
+findUnique,findFirst ** if original query return null, result won't be saved in cache.
 Any other method will produce standart database query without caching.
-Open for MR.
-
-findUnique ** if original query return null, result won't be saved in cache.
 
 # FAQ:
   How it work?
-    - First time query executed in database, rest will be served from cache until being purged manually, by calling purge() method on model.
-  How it works with types?
-    - Fully support
+    - First time query executed in database, rest will be served from cache until being purged manually, by calling purge() method.
   Can i disable cache for specific method/model?
-    - No. Use second client instead.
-  Why do i need to cache findUnique?
-    - It helpfull, when you use include in query. 
-      Ex: cache.posts.findUnique({ where: { id: 1 }, include: { comments: { take: 10 } }})
+    - No. Use main or second client instead.
+  Can i purge cache for all models by calling one root method?
+    - No. Only by calling purge() for every model.
 
 # More Examples: 
 

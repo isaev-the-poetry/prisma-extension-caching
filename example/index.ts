@@ -1,17 +1,16 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { caching } from "../dist"
 
-// You can use multiple clients. 
-// ex: const prisma = new PrismaClient()
-const cache = new PrismaClient().$extends(caching())
-// Caching is enabled always. 
+// You can also use multiple clients. 
+const prisma = new PrismaClient()
+const cache = prisma.$extends(caching()) 
 
 async function main() {
 
   // First time: query will retrive data, and save it in local prisma.cache model
   // Next time: data will be fetched from cache. No more database calls untill purge.
   // Query arguments will be used as flexible caching key.
-  const recentPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })
+  const cachedPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })
     .then(console.log)
 
   /* You can use findUnique as materialised view */
@@ -41,7 +40,6 @@ async function main() {
   // purge by time
   await cache.post.purge({ seconds: 10 }, "findMany") // purge findMany method cache, older than 10 seconds
   await cache.post.purge({ hours: 1 }, "count") // purge findMany method cache, older than 1 hour
-
 
   // Purge by JsonFilter is good, when you have dynamic query param cache
   const currentUser = 1; // getCurrentUser()
