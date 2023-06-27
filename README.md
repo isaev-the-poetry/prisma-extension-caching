@@ -11,14 +11,18 @@ You can use Prisma.JsonFilter in purge function to get maximum flexibility.
 ```
   // Query arguments will be used as flexible caching key.
   const cachedPosts = await cache.post.findMany({ orderBy: { id: "desc" }, take: 10 })  
- 
-  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // model query exact match
-  await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // model query JsonFilter match 
-  await cache.post.purge({ hours: 3 }) // all model cache older than 3 hours
-  await cache.post.purge() // all model cache
- 
-  const countPosts = await cache.post.count()
-  await cache.post.purge({ hours: 3 }, 'count') // purge for only specific method
+      .then(console.log)
+
+  await cache.post.count({ where: { id: { gt: 100 } } })
+
+  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }) // query exact match
+  await cache.post.purge({ path: ['where', 'visible'], not: Prisma.DbNull }) // query JsonFilter match 
+  await cache.post.purge({ hours: 3 }) // all model cache, older than 3 hours
+  await cache.post.purge({ seconds: 60 }) // all model cache, older than 1 minute
+  await cache.post.purge({ seconds: 10 }, "findMany") // purge findMany method cache, older than 10 seconds 
+  await cache.post.purge({ orderBy: { id: "desc" }, take: 10 }, "findMany") // query cache for method
+  await cache.post.purge("findMany") // all model cache for method
+  await cache.post.purge() // all model cache data
 ```
 
 ## Get started
@@ -49,19 +53,6 @@ export const cache = new PrismaClient().$extends(caching())
 That's all. Now you can use it as second client.
 
 
-# The example app:
-
-```
-cd example
-npm install
-npx prisma db push
-```
-
-Test the extension in the example app:
-```
-npm run dev
-```
-
 # Supported methods
 
 ```
@@ -87,3 +78,66 @@ findUnique ** if original query return null, result won't be saved in cache.
   Why do i need to cache findUnique?
     - It helpfull, when you use include in query. 
       Ex: cache.posts.findUnique({ where: { id: 1 }, include: { comments: { take: 10 } }})
+
+# More Examples: 
+
+```
+  // Purge by JsonFilter is good, when you have dynamic query param cache
+  const currentUser = 1; // getCurrentUser()
+  const userPosts = await cache.post.findMany({
+    where: {
+      author: currentUser
+    }
+  })
+  // will purge all cache by query route match, ignoring currentUser difference
+  await cache.post.purge({ path: ['where', 'author'], not: Prisma.DbNull })
+
+  /* You can use findUnique as materialised view */
+  // const materialisedView = await cache.post.findUnique({
+  //   include: {
+  //     comments: true,
+  //     author: true,
+  //     links: true,
+  //     metadata: true,
+  //     ...
+  //   }
+  // })
+
+  /** If you have complex query and you want to make key more readable,
+   *  you can export query as separate object, and tag it explicit  */
+  // Named key concept 
+  const cacheKey = { select: { title: true } } as const
+  const posts = await cache.post.findMany(cacheKey)
+  // purge with key
+  await cache.post.purge(cacheKey)
+
+  // Typed key concept 
+  type cacheKey = { select: {} }
+  const postsCatalogView: cacheKey = { select: { title: true } }
+  const data = await cache.post.findMany(postsCatalogView)
+  // purge with key
+  await cache.post.purge(postsCatalogView)
+
+  // Tip: if you have same query params in model, you should purge cache apart
+  await cache.post.count({ where: { id: { gt: 100 } } })
+  await cache.post.findMany({ where: { id: { gt: 100 } } })
+  await cache.post.purge({ where: { id: { gt: 100 } } }) // will purge both caches, because query params are match
+  await cache.post.purge({ where: { id: { gt: 100 } } }, 'count') // will purge cache only for count mehtod
+
+  // query without caching
+  // ex: const prisma = new PrismaClient()
+  // const originalPosts = await prisma.post.findMany({ orderBy: { id: "desc" }, take: 10 })
+```
+
+# The example app:
+
+```
+cd example
+npm install
+npx prisma db push
+```
+
+Test the extension in the example app:
+```
+npm run dev
+```
