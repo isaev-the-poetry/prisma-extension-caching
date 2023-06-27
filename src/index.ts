@@ -58,7 +58,7 @@ export const caching = () =>
             await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } },
               create: { model, operation, key: args as Prisma.JsonObject, value: result as Prisma.JsonArray },
-              update: { value: result as Prisma.JsonArray }
+              update: { value: result as Prisma.JsonArray, updated: new Date() }
             })
             return result
           },
@@ -71,7 +71,7 @@ export const caching = () =>
             result && await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
               create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
-              update: { value: result || {} as Prisma.JsonObject }
+              update: { value: result || {} as Prisma.JsonObject, updated: new Date() }
             })
             return result
           },
@@ -84,7 +84,7 @@ export const caching = () =>
             result && await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
               create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
-              update: { value: result || {} as Prisma.JsonObject }
+              update: { value: result || {} as Prisma.JsonObject, updated: new Date() }
             })
             return result
           }, 
@@ -97,7 +97,7 @@ export const caching = () =>
             await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } },
               create: { model, operation, key: args as Prisma.JsonObject, value: result as Prisma.JsonArray },
-              update: { value: result as Prisma.JsonArray }
+              update: { value: result as Prisma.JsonArray, updated: new Date() }
             })
             return result
           },
@@ -110,7 +110,7 @@ export const caching = () =>
             await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } },
               create: { model, operation, key: args as Prisma.JsonObject, value: { count: result } as Prisma.JsonObject },
-              update: { value: { count: result } as Prisma.JsonObject }
+              update: { value: { count: result } as Prisma.JsonObject, updated: new Date() }
             })
             return result
           },
@@ -123,7 +123,7 @@ export const caching = () =>
             await client.cache.upsert({
               where: { model_operation_key: { model, operation, key: args as Prisma.JsonObject } },
               create: { model, operation, key: args as Prisma.JsonObject, value: result as Prisma.JsonArray },
-              update: { value: result as Prisma.JsonArray }
+              update: { value: result as Prisma.JsonArray, updated: new Date() }
             })
             return result
           },
