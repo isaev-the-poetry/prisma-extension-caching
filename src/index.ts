@@ -1,11 +1,11 @@
 import { Prisma } from '@prisma/client'
 
-type range<R extends "hours" | "seconds"> = Record<R, number>
+type range = { hours: number } | { seconds: number }
+
 export const supportedMethod = ['findMany', 'groupBy', 'count', 'aggregate', 'findUnique'] as const
 export type supportedMethod = typeof supportedMethod[number]
 
-const isRangeHours = (args: {}): args is range<"hours"> => "hours" in args
-const isRangeSeconds = (args: {}): args is range<"seconds"> => "seconds" in args
+const isRange = (args: {}): args is range => ("hours" in args) || "seconds" in args 
 const isFilter = (args: {}): args is Prisma.JsonFilter => "path" in args
 const isMethod = (method: unknown): method is supportedMethod => supportedMethod.includes(method as supportedMethod)
 const delayHours = (purgeDate: Date, hours: number): Date => (purgeDate.setTime(purgeDate.getTime() - (hours * 60 * 60 * 1000)), purgeDate)
@@ -17,7 +17,7 @@ export const caching = () =>
       name: 'prisma-extension-caching',
       model: {
         $allModels: {
-          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range<'hours'|'seconds'> | supportedMethod, operation?: supportedMethod) {
+          async purge<T, A>(this: T, args?: Prisma.Args<T, 'findMany'> | Prisma.JsonFilter | range | supportedMethod, operation?: supportedMethod) {
             const ctx = Prisma.getExtensionContext(this)
             const model = ctx.name
 
@@ -27,10 +27,18 @@ export const caching = () =>
               return client.cache.deleteMany({ where: { model, operation: args } })
             else if (isFilter(args))
               return client.cache.deleteMany({ where: { model, key: args, operation } })
-            else if (isRangeHours(args))
-              return client.cache.deleteMany({ where: { operation, created: { lt: delayHours(new Date(), args.hours) } } })
-            else if (isRangeSeconds(args))
-              return client.cache.deleteMany({ where: { operation, created: { lt: delaySeconds(new Date(), args.seconds) } } })
+            else if (isRange(args))
+              return client.cache.deleteMany({
+                where: {
+                  operation,
+                  created: {
+                    lt: ("hours" in args) ?
+                      delayHours(new Date(), args.hours)
+                      :
+                      delaySeconds(new Date(), args.seconds)
+                  }
+                }
+              })
             else if (model && args)
               return client.cache.deleteMany({ where: { model, operation, key: { equals: args } } })
           },
