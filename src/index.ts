@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client'
-import { Args, DefaultArgs, DynamicClientExtensionThis } from '@prisma/client/runtime'
+import { Args, DefaultArgs, DynamicClientExtensionThis, DynamicQueryExtensionCb } from '@prisma/client/runtime'
 
 type range = { hours: number } | { seconds: number }
 
@@ -13,20 +13,19 @@ const delayHours = (purgeDate: Date, hours: number): Date => (purgeDate.setTime(
 const delaySeconds = (purgeDate: Date, seconds: number): Date => (purgeDate.setTime(purgeDate.getTime() - (seconds * 1000)), purgeDate)
 
 type CacheProps = {
-  args: {}
-  result: Prisma.JsonArray | Prisma.JsonObject | number | {} // for {} Need to find how to infer Prisma AggregateOutputType
+  args: {} 
+  result: Prisma.JsonArray | Prisma.JsonObject | number | null | {} // for {} Need to find how to infer Prisma AggregateOutputType
   operation: supportedMethod
   model: Prisma.ModelName
 }
 
 type client = DynamicClientExtensionThis<Prisma.TypeMap<Args & DefaultArgs>, Prisma.TypeMapCb, DefaultArgs>
 
-
 const createCache = async (client: client, { model, args, operation, result }: CacheProps) => (await client.cache.upsert({
   where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } },
-  create: { model, operation, key: args as unknown as Prisma.JsonObject, value: result as Prisma.JsonObject },
-  update: { value: result || {} as Prisma.JsonObject, updated: new Date() }
-})).value
+  create: { model, operation, key: args as unknown as Prisma.JsonObject, value: (result as Prisma.JsonObject) || undefined },
+  update: { value: (result as Prisma.JsonObject) || undefined, updated: new Date() }
+}), result)
 
 const getCache = async (client: client, { model, args, operation }: Omit<CacheProps, "result">) => client.cache.findUnique({ where: { model_operation_key: { model, operation, key: args as unknown as Prisma.JsonObject } } })
 
@@ -64,40 +63,20 @@ export const caching = () =>
         },
       },
       query: {
-        $allModels: {
-          async findMany({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            return cache ? cache.value : createCache(client, { model, args, operation, result: await query(args) })
-          },
-          async findUnique({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            if (cache)
-              return cache.value
+        $allModels:
+          Object.fromEntries(
+            supportedMethod.map((method) =>
+              [
+                method,
+                (async ({ model, operation, args, query }: CacheProps & { query: (args: {}) => CacheProps['result'] }) => {
+                  const cache = await getCache(client, { model, operation, args })
+                  if (cache) return cache.value
 
-            const result = await query(args)
-            return result && createCache(client, { model, args, operation, result })
-          },
-          async findFirst({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            if (cache)
-              return cache.value
-
-            const result = await query(args)
-            return result && createCache(client, { model, args, operation, result })
-          },
-          async groupBy({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            return cache ? cache.value : createCache(client, { model, args, operation, result: await query(args) })
-          },
-          async count({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            return cache ? cache.value : createCache(client, { model, args, operation, result: await query(args) })
-          },
-          async aggregate({ model, operation, args, query }) {
-            const cache = await getCache(client, { model, operation, args })
-            return cache ? cache.value : createCache(client, { model, args, operation, result: await query(args) })
-          },
-        },
+                  const result = await query(args)
+                  return result && createCache(client, { model, args, operation, result })
+                }) as DynamicQueryExtensionCb<Prisma.TypeMap<Args & DefaultArgs>, "model", "cache", supportedMethod>
+              ])
+          )
       },
     })
   })

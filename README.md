@@ -60,13 +60,13 @@ That's all. Now you can use it as second client.
 ```
 findMany
 groupBy
-count
 aggregate
-findUnique**
-findFirst**
+count*
+findUnique*
+findFirst*
 ```
 
-findUnique,findFirst ** if original query return null, result won't be saved in cache.
+*findUnique,findFirst,count - if original query return null, result won't be saved in cache.
 Any other method will produce standart database query without caching.
 
 # FAQ:
