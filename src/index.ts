@@ -14,7 +14,7 @@ const delaySeconds = (purgeDate: Date, seconds: number): Date => (purgeDate.setT
 
 type CacheProps = {
   args: {}
-  result: Prisma.JsonArray | Prisma.JsonObject | Prisma.CacheCountAggregateOutputType | Prisma.PostCountAggregateOutputType | number
+  result: Prisma.JsonArray | Prisma.JsonObject | number | {} // for {} Need to find how to infer Prisma AggregateOutputType
   operation: supportedMethod
   model: Prisma.ModelName
 }
