@@ -4,10 +4,10 @@
     "dev": "ts-node --transpile-only index.ts"
   },
   "dependencies": {
-    "@prisma/client": "^4.15.0"
+    "@prisma/client": "latest"
   },
   "devDependencies": {
-    "prisma": "^4.15.0",
+    "prisma": "latest",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.0"
   }
